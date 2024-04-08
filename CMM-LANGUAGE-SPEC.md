@@ -161,7 +161,9 @@ the start symbol of the grammar is _```prog```_
 ## Scopes and Types
 
 There are two scopes in C--. `global` and `local`.
+
 `local` scope pertains to any variable defined within a function, or as a function's formal parameter
+
 `global` scope pertains to any variable defined outside of a function, or a function definition
 
 There are two types in C--, `int` variable and `function`
