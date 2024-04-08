@@ -4,15 +4,23 @@ A compiler for C-- to MIPS32
 
 A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
+## PLANNED, BUT UNSUPORTED FEATURES
+
+- function returns
+- arithmetic operations (+,-,/,*)
+- while loops
+- if statements
+
+
 ## Features
 
 - Lexical Analysis
 - Syntax Analysis
-- Semantic Checking (coming soon)
-- Abstract Syntax Tree Generation (coming soon)
-- Intermediate Code Generation (coming soon)
+- Semantic Checking
+- Abstract Syntax Tree Generation
+- Intermediate Code Generation
 - Arithmetic Expression Evaluation (coming soon)
-- MIPS32 Assembly Code Generation (coming soon)
+- MIPS32 Assembly Code Generation
 
 ### Installation
 
