@@ -10,6 +10,7 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 - arithmetic operations (+,-,/,*)
 - while loops
 - if statements
+- 3 address code output
 
 
 ## Features
