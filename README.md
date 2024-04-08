@@ -95,7 +95,7 @@ Comments are a sequence of characters preceeded by ```/*``` and followed by ```*
 Nonterminals are shown in lowercase italics.
 Terminals are shown in upper-case
 `ε` defines an empty sequences
-the start symbol of the grammar is _`prog'_
+the start symbol of the grammar is _```prog```_
 #### prog
 - `func_defn prog`
 - `var_decl prog`
