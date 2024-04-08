@@ -195,5 +195,37 @@ the start symbol of the grammar is _```prog```_
 - `opAND`
 - `opOR`
 
+## Operator Associativity
 
+### Arithmetic Operators
+
+| Operator                      | Associativity    |
+|-------------------------------|------------------|
+| opSUB (unary)                 | right to left    |
+| opMUL, opDIV                  | left to right    |
+| opADD, opSUB (binary)         | left to right    |
+
+### Boolean Operators
+
+| Operator            | Associativity    |
+|---------------------|------------------|
+| opAND               | right to left    |
+| opOR                | left to right    |
+
+# Semantic Rules
+
+## Scopes and Types
+
+There are two scopes in C--. `global` and `local`.
+`local` scope pertains to any variable defined within a function, or as a function's formal parameter
+`global` scope pertains to any variable defined outside of a function, or a function definition
+
+There are two types in C--, `int` variable and `function`
+
+Thus, these are the combinations of scopes and types:
+
+|            | Global    | Local      |
+|------------|-----------|------------|
+| Variable   | Yes       | Yes        |
+| Function   | Yes       | No         |
 
