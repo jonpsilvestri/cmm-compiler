@@ -62,10 +62,6 @@ digit::= ```0 | 1 | ... | 9```
 
 ## Tokens
 
-## 1.2. Tokens
-
-The tokens of the language are as follows:
-
 | Name      | Pattern                          | Comments                        |
 |-----------|----------------------------------|---------------------------------|
 | ID        | `letter { letter \| digit \| _ }`| identifier: e.g., x, abc, p_q_12|
