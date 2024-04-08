@@ -8,7 +8,7 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
 - Lexical Analysis
 - Syntax Analysis
-- Semantic Checking
+- Semantic Checking (coming soon)
 - Abstract Syntax Tree Generation (coming soon)
 - Intermediate Code Generation (coming soon)
 - Arithmetic Expression Evaluation (coming soon)
