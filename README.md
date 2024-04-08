@@ -98,9 +98,9 @@ Terminals are shown in upper-case
 the start symbol of the grammar is _```prog```_
 
 #### *prog*
-- ```*func_defn* *prog*```
-- ```*var_decl* *prog*```
-- `*ε*`
+- _```func_defn prog```_
+- _```var_decl prog```_
+- `ε`
 
 #### *var_decl*
 - ```*type* *id_list* SEMI```
