@@ -54,4 +54,36 @@ to clean all libraries and excecutables:
 make clean
 ```
 
+# C-- Language Specification
+## Lexical Rules
+letter::= ```a | b | ... | z | A | B | ... | Z```
+digit::= ```0 | 1 | ... | 9```
+## Tokens
+Name 	   	Pattern 	   	Comments
+ID 	  	letter { letter | digit | _ } 	  	identifier: e.g., x, abc, p_q_12
+INTCON 	  	digit { digit } 	  	integer constant: e.g., 12345
+LPAREN 		( 		Left parenthesis
+RPAREN 		) 		Right parenthesis
+LBRACE 		{ 		Left curly brace
+RBRACE 		} 		Right curly brace
+COMMA 		, 		Comma
+SEMI 		; 		Semicolon
+kwINT 		int 		Keyword: int
+kwIF 		if 		Keyword: if
+kwELSE 		else 		Keyword: else
+kwWHILE 		while 		Keyword: while
+kwRETURN 		return 		Keyword: return
+opASSG 		= 		Op: Assignment
+opADD 		+ 		Op: addition
+opSUB 		– 		Op: subtraction
+opMUL 		* 		Op: multiplication
+opDIV 		/ 		Op: division
+opEQ 		== 		Op: equals
+opNE 		!= 		Op: not-equals
+opGT 		> 		Op: greater-than
+opGE 		>= 		Op: greater than or equal
+opLT 		< 		Op: less-than
+opLE 		<= 		Op: less than or equal
+opAND 		&& 		Op: logical and
+opOR 		|| 		Op: logical or
 
