@@ -96,103 +96,104 @@ Nonterminals are shown in lowercase italics.
 Terminals are shown in upper-case
 `ε` defines an empty sequences
 the start symbol of the grammar is _```prog```_
-#### prog
-- `func_defn prog`
-- `var_decl prog`
-- `ε`
 
-#### var_decl
-- `type id_list SEMI`
+#### *prog*
+- `*func_defn* *prog*`
+- `*var_decl* *prog*`
+- `*ε*`
 
-#### id_list
-- `ID`
-- `ID COMMA id_list`
+#### *var_decl*
+- `*type* *id_list* *SEMI*`
 
-#### type
-- `kwINT`
+#### *id_list*
+- `*ID*`
+- `*ID* *COMMA* *id_list*`
 
-#### func_defn
-- `type ID LPAREN opt_formals RPAREN LBRACE opt_var_decls opt_stmt_list RBRACE`
+#### *type*
+- `*kwINT*`
 
-#### opt_formals
-- `ε`
-- `formals`
+#### *func_defn*
+- `*type* *ID* *LPAREN* *opt_formals* *RPAREN* *LBRACE* *opt_var_decls* *opt_stmt_list* *RBRACE*`
 
-#### formals
-- `type ID COMMA formals`
-- `type ID`
+#### *opt_formals*
+- `*ε*`
+- `*formals*`
 
-#### opt_var_decls
-- `ε`
-- `var_decl opt_var_decls`
+#### *formals*
+- `*type* *ID* *COMMA* *formals*`
+- `*type* *ID*`
 
-#### opt_stmt_list
-- `stmt opt_stmt_list`
-- `ε`
+#### *opt_var_decls*
+- `*ε*`
+- `*var_decl* *opt_var_decls*`
 
-#### stmt
-- `fn_call SEMI`
-- `while_stmt`
-- `if_stmt`
-- `assg_stmt`
-- `return_stmt`
-- `LBRACE opt_stmt_list RBRACE`
-- `SEMI`
+#### *opt_stmt_list*
+- `*stmt* *opt_stmt_list*`
+- `*ε*`
 
-#### if_stmt
-- `kwIF LPAREN bool_exp RPAREN stmt`
-- `kwIF LPAREN bool_exp RPAREN stmt kwELSE stmt`
+#### *stmt*
+- `*fn_call* *SEMI*`
+- `*while_stmt*`
+- `*if_stmt*`
+- `*assg_stmt*`
+- `*return_stmt*`
+- `*LBRACE* *opt_stmt_list* *RBRACE*`
+- `*SEMI*`
 
-#### while_stmt
-- `kwWHILE LPAREN bool_exp RPAREN stmt`
+#### *if_stmt*
+- `*kwIF* *LPAREN* *bool_exp* *RPAREN* *stmt*`
+- `*kwIF* *LPAREN* *bool_exp* *RPAREN* *stmt* *kwELSE* *stmt*`
 
-#### return_stmt
-- `kwRETURN SEMI`
-- `kwRETURN arith_exp SEMI`
+#### *while_stmt*
+- `*kwWHILE* *LPAREN* *bool_exp* *RPAREN* *stmt*`
 
-#### assg_stmt
-- `ID opASSG arith_exp SEMI`
+#### *return_stmt*
+- `*kwRETURN* *SEMI*`
+- `*kwRETURN* *arith_exp* *SEMI*`
 
-#### fn_call
-- `ID LPAREN opt_expr_list RPAREN`
+#### *assg_stmt*
+- `*ID* *opASSG* *arith_exp* *SEMI*`
 
-#### opt_expr_list
-- `ε`
-- `expr_list`
+#### *fn_call*
+- `*ID* *LPAREN* *opt_expr_list* *RPAREN*`
 
-#### expr_list
-- `arith_exp COMMA expr_list`
-- `arith_exp`
+#### *opt_expr_list*
+- `*ε*`
+- `*expr_list*`
 
-#### arith_exp
-- `ID`
-- `INTCON`
-- `arith_exp arithop arith_exp`
-- `LPAREN arith_exp RPAREN`
-- `opSUB arith_exp`
-- `fn_call`
+#### *expr_list*
+- `*arith_exp* *COMMA* *expr_list*`
+- `*arith_exp*`
 
-#### bool_exp
-- `arith_exp relop arith_exp`
-- `bool_exp logical_op bool_exp`
+#### *arith_exp*
+- `*ID*`
+- `*INTCON*`
+- `*arith_exp* *arithop* *arith_exp*`
+- `*LPAREN* *arith_exp* *RPAREN*`
+- `*opSUB* *arith_exp*`
+- `*fn_call*`
 
-#### arithop
-- `opADD`
-- `opSUB`
-- `opMUL`
-- `opDIV`
+#### *bool_exp*
+- `*arith_exp* *relop* *arith_exp*`
+- `*bool_exp* *logical_op* *bool_exp*`
 
-#### relop
-- `opEQ`
-- `opNE`
-- `opLE`
-- `opLT`
-- `opGE`
-- `opGT`
+#### *arithop*
+- `*opADD*`
+- `*opSUB*`
+- `*opMUL*`
+- `*opDIV*`
 
-#### logical_op
-- `opAND`
-- `opOR`
+#### *relop*
+- `*opEQ*`
+- `*opNE*`
+- `*opLE*`
+- `*opLT*`
+- `*opGE*`
+- `*opGT*`
+
+#### *logical_op*
+- `*opAND*`
+- `*opOR*`
 
 
 
