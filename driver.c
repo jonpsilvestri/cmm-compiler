@@ -1,14 +1,14 @@
 /*
  * File: parser-driver.c
  * Author: Jonathan Silvestri
- * Purpose: The driver code for the compiler.  It uses command-line
+ * Purpose: The driver code for the C-- Compiler.  It uses command-line
  *          arguments to control whether semantic checks and/or code 
  *          generation is carried out.
  */
 
 #include <stdio.h>
 #include <string.h>
-
+ 
 extern int parse();
 
 int chk_decl_flag = 0;      /* set to 1 to do semantic checking */

@@ -1,9 +1,9 @@
-/*
+/* 
  * File: scanner.h
  * Author: Jonathan Silvestri
- * Purpose: Lists tokens and their values
+ * Purpose: Lists tokens and their values for use in the CSC 453 project
  */
-
+ 
 #ifndef __SCANNER_H__
 #define __SCANNER_H__
 

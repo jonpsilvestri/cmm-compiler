@@ -1,9 +1,9 @@
-/*
+/* 
  * File: scanner.c
  * Author: Jonathan Silvestri
  * Purpose: Generates a token upon request and returns the lexeme
  *          and a token for the parser
- */
+ */ 
 
 #include <stdio.h>
 #include <ctype.h>
@@ -18,21 +18,16 @@ int get_token() {
     char c;
     c =  getchar();
 
-    if (c == '\n'){
-        line_number++;
-    }
-
     // skip whitespace and newlines
     while(c == ' ' || c == '\n' || c == '\t'){
-        c = getchar();
         if (c == '\n'){
             line_number++;
         }
+        c = getchar();
     }
 
     if (c == EOF){
         return EOF;
-        line_number++;
     }
 
     // allocate a buffer for the characters
