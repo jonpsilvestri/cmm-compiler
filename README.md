@@ -98,12 +98,12 @@ Terminals are shown in upper-case
 the start symbol of the grammar is _```prog```_
 
 #### *prog*
-- `*func_defn* *prog*`
-- `*var_decl* *prog*`
+- ```*func_defn* *prog*```
+- ```*var_decl* *prog*```
 - `*ε*`
 
 #### *var_decl*
-- `*type* *id_list* *SEMI*`
+- ```*type* *id_list* SEMI```
 
 #### *id_list*
 - `*ID*`
