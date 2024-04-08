@@ -11,19 +11,28 @@
 #include <string.h>
 #include "scanner.h"
 
+int line_number = 1;
 char* lexeme = NULL;
 
 int get_token() {
     char c;
     c =  getchar();
 
+    if (c == '\n'){
+        line_number++;
+    }
+
     // skip whitespace and newlines
     while(c == ' ' || c == '\n' || c == '\t'){
         c = getchar();
+        if (c == '\n'){
+            line_number++;
+        }
     }
 
     if (c == EOF){
         return EOF;
+        line_number++;
     }
 
     // allocate a buffer for the characters
@@ -43,6 +52,9 @@ int get_token() {
         }
         while (1){
             c = getchar();
+            if (c == '\n'){
+                line_number++;
+            }
             if (c == '*'){
                 c = getchar();
                 if (c == '/'){
