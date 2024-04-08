@@ -2,6 +2,8 @@
 
 A compiler for C-- to MIPS32
 
+A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
+
 ## Features
 
 - Lexical Analysis
