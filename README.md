@@ -55,10 +55,6 @@ make clean
 ```
 
 # C-- Language Specification
-## Lexical Rules
-letter::= ```a | b | ... | z | A | B | ... | Z```
-
-digit::= ```0 | 1 | ... | 9```
 
 ## Tokens
 
