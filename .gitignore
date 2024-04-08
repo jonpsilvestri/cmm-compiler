@@ -1,0 +1,7 @@
+# Compiled Libraries #
+######################
+*.o
+
+# README and md #
+#################
+*.md
