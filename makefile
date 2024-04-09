@@ -9,4 +9,4 @@ clean :
 	rm -f parser.o
 	rm -f driver.o
 	rm -f codegen.o
-	rm -f ast-print.o 
+	rm -f ast-print.o  

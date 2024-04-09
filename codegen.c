@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-
+ 
 #include "ast.h"
 #include "codegen.h"
 
@@ -10,7 +10,7 @@ int tmp_count = 0;
 extern char* cur_id;
 extern SymbolTable* scope;
 
-int t_reg = 0;
+int label_count = 0;
 int fp_offset = 0;
 int sp_offset = 0;
 
@@ -80,6 +80,54 @@ void generate_mips(){
                 }
                 break;
 
+            case GC_GT:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_gt = cur_quad->src1->val.st_ref;
+                if (lhs_gt->is_global) {printf("  lw $t0, _%s\n", lhs_gt->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_gt->offset);}
+
+                Symbol* rhs_gt = cur_quad->src2->val.st_ref;
+                if (rhs_gt->is_global) {printf("  lw $t1, _%s\n", rhs_gt->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_gt->offset);}
+                
+                printf("  bgt $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_EQ:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_eq = cur_quad->src1->val.st_ref;
+                if (lhs_eq->is_global) {printf("  lw $t0, _%s\n", lhs_eq->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_eq->offset);}
+
+                Symbol* rhs_eq = cur_quad->src2->val.st_ref;
+                if (rhs_eq->is_global) {printf("  lw $t1, _%s\n", rhs_eq->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_eq->offset);}
+                printf("  beq $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_LT:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_lt = cur_quad->src1->val.st_ref;
+                if (lhs_lt->is_global) {printf("  lw $t0, _%s\n", lhs_lt->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_lt->offset);}
+
+                Symbol* rhs_lt = cur_quad->src2->val.st_ref;
+                if (rhs_lt->is_global) {printf("  lw $t1, _%s\n", rhs_lt->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_lt->offset);}
+
+                printf("  blt $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_GOTO:
+                print_3ac_comment(cur_quad);
+                printf("  j _%s\n", cur_quad->label);
+                break;
+
+            case GC_LABEL:
+                print_3ac_comment(cur_quad);
+                printf("_%s:\n", cur_quad->label);
+                break;
+
             case GC_PARAM:
                 print_3ac_comment(cur_quad);
                 if (cur_quad->src1->val.st_ref->is_global == false){
@@ -100,10 +148,22 @@ void generate_mips(){
 
             case GC_RETRIEVE:
                 print_3ac_comment(cur_quad);
+                printf("  sw $v0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
                 break;
 
             case GC_LEAVE:
                 print_3ac_comment(cur_quad);
+                break;
+
+            case GC_RETURN:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  add $v0, $zero, $t0\n");
+                printf("  la $sp, 0($fp)\n");
+                printf("  lw $ra, 0($sp)\n");
+                printf("  lw $fp, 4($sp)\n");
+                printf("  la $sp, 8($sp)\n");
+                printf("  jr $ra\n");
                 break;
 
             case GC_RETURN_VOID:
@@ -137,6 +197,26 @@ void print_3ac_comment(Quad* cur_quad){
                 printf("#enter %s\n", cur_quad->src1->val.st_ref->id);
                 break;
 
+            case GC_LABEL:
+                printf("#label %s\n", cur_quad->label);
+                break;
+
+            case GC_GT:
+                printf("#if %s > %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_EQ:
+                printf("#if %s == %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_LT:
+                printf("#if %s < %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_GOTO:
+                printf("#goto %s\n", cur_quad->label);
+                break;
+
             case GC_ASSG:
                 if (cur_quad->src1->operand_type == OPERAND_ST_PTR){
                     printf("#assign  %s = %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
@@ -166,8 +246,12 @@ void print_3ac_comment(Quad* cur_quad){
                 printf("#retrieve %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
                 break;
 
+            case GC_RETURN:
+                printf("#return %s\n", cur_quad->src1->val.st_ref->id);
+                break;
+
             default:
-                printf("#ERROR IN PRINT_3AC:\n UNKNOWN OP: %d\n", cur_quad->op);
+                printf("#ERROR IN PRINT_3AC COMMENT:\n UNKNOWN OP: %d\n", cur_quad->op);
                 exit(-1);
                 break;
         }
@@ -191,6 +275,32 @@ void print_3ac(){
                 }
                 break;
 
+            case GC_LABEL:
+                printf("label %s\n", cur_quad->label);
+                break;
+
+            case GC_GOTO:
+                printf("goto %s\n", cur_quad->label);
+                break;
+
+            case GC_GT:
+                Operand* gt_lhs = cur_quad->src1;
+                Operand* gt_rhs = cur_quad->src2;
+                printf("if %s > %s, goto %s\n", gt_lhs->val.st_ref->id, gt_rhs->val.st_ref->id, cur_quad->label);
+                break;  
+
+            case GC_EQ:
+                Operand* eq_lhs = cur_quad->src1;
+                Operand* eq_rhs = cur_quad->src2;
+                printf("if %s == %s, goto %s\n", eq_lhs->val.st_ref->id, eq_rhs->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_LT:
+                Operand* lt_lhs = cur_quad->src1;
+                Operand* lt_rhs = cur_quad->src2;
+                printf("if %s < %s, goto %s\n", lt_lhs->val.st_ref->id, lt_rhs->val.st_ref->id, cur_quad->label);
+                break;
+
             case GC_CALL:
                 printf("call %s, %d\n", cur_quad->src1->val.st_ref->id, cur_quad->nargs);
                 break; 
@@ -201,6 +311,10 @@ void print_3ac(){
 
             case GC_LEAVE:
                 printf("leave %s\n", cur_quad->src1->val.st_ref->id);
+                break;
+
+            case GC_RETURN:
+                printf("return %s\n", cur_quad->src1->val.st_ref->id);
                 break;
 
             case GC_RETURN_VOID:
@@ -217,6 +331,79 @@ void print_3ac(){
                 break;
         }
         cur_quad = cur_quad->next;
+    }
+}
+
+void create_if_3ac(ASTnode* cur_node){
+    // if (condition) goto TRUE
+    create_if_condition(cur_node->child0);
+    // else goto FALSE
+    char* else_label = (char*)malloc(sizeof(char)*15);
+    sprintf(else_label, "ELSE%d", label_count);
+    Quad* jump_else = newinstr(GC_GOTO, NULL, NULL, NULL); jump_else->label = strdup(else_label);
+    append_quad(jump_else);
+
+    // TRUE BODY
+    char* true_label = (char*)malloc(sizeof(char)*15);
+    sprintf(true_label, "TRUE%d", label_count);
+    Quad* true_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); true_label_quad->label = strdup(true_label);
+    append_quad(true_label_quad); 
+    label_count++;
+    create_3ac(cur_node->child1);
+    label_count--;
+
+    char* after_label = (char*)malloc(sizeof(char)*15);
+    sprintf(after_label, "AFTER%d", label_count);
+    Quad* jump_after_quad = newinstr(GC_GOTO, NULL, NULL, NULL); jump_after_quad->label = strdup(after_label);
+    append_quad(jump_after_quad);
+
+    // ELSE BODY
+    Quad* else_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); else_label_quad->label = strdup(else_label);
+    append_quad(else_label_quad);
+    label_count++;
+    create_3ac(cur_node->child2);
+    label_count--;
+    Quad* jump_after_else_quad = newinstr(GC_GOTO, NULL, NULL, NULL); jump_after_else_quad->label = strdup(after_label);
+    append_quad(jump_after_else_quad);
+
+    // AFTER LABEL
+    Quad* after_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); after_label_quad->label = strdup(after_label);
+    append_quad(after_label_quad);
+    label_count++;
+}
+
+void create_if_condition(ASTnode* cur_node){
+    ASTnode* lh_node = cur_node->child0;
+    ASTnode* rh_node = cur_node->child1;
+    create_3ac(lh_node); create_3ac(rh_node); // rhs and lhs will be assigned temps if they're intconsts
+
+    char* label = (char*)malloc(sizeof(char)*15);
+    sprintf(label, "TRUE%d", label_count);
+    switch(cur_node->node_type){
+        Quad* relop_quad;
+        case GT:
+            Operand* lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            Operand* rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_GT, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        case LT:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_LT, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+        
+        case EQ:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_EQ, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
     }
 }
 
@@ -274,9 +461,25 @@ void create_3ac(ASTnode* cur_node){
             append_quad(this_quad);
             break;
 
+        case RETURN:
+            if (cur_node->child0 == NULL){
+                Symbol* retval_tmp = create_tmp();
+                Operand* return_val_operand = make_operand(OPERAND_INTCONST, NULL, -1);
+                Operand* return_st_operand = make_operand(OPERAND_ST_PTR, retval_tmp, 0);
+                Quad* assg_quad = newinstr(GC_ASSG, return_val_operand, NULL, return_st_operand);
+                append_quad(assg_quad);
+                this_quad = newinstr(GC_RETURN, return_st_operand, NULL, NULL);
+                append_quad(this_quad);
+            }
+            break;
+
         case EXPR_LIST:
             create_3ac(cur_node->child0);
             create_3ac(cur_node->child1);
+            break;
+
+        case IF:
+            create_if_3ac(cur_node);
             break;
 
         case INTCONST:

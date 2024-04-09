@@ -4,7 +4,7 @@
  * Purpose: Generates a token upon request and returns the lexeme
  *          and a token for the parser
  */ 
-
+ 
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>

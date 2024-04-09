@@ -8,12 +8,13 @@
 
 #include <stdio.h>
 #include <string.h>
- 
+  
 extern int parse();
 
 int chk_decl_flag = 0;      /* set to 1 to do semantic checking */
 int print_ast_flag = 0;     /* set to 1 to print out the AST */
 int gen_code_flag = 0;      /* set to 1 to generate code */
+int gen_3ac_flag = 0;
 
 /*
  * parse_args() -- parse command-line arguments and set flags appropriately
@@ -35,6 +36,9 @@ void parse_args(int argc, char *argv[]) {
       }
       else if (strcmp(argv[i], "--gen_code") == 0) {
 	gen_code_flag = 1;
+      }
+      else if (strcmp(argv[i], "--gen_3ac") == 0) {
+  gen_3ac_flag = 1;
       }
       else {
 	fprintf(stderr, "Unrecognized option: %s\n", argv[i]);

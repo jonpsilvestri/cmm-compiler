@@ -2,7 +2,7 @@
  * File: ast-print.c
  * Author: Jonathan Silvestri
  * Purpose: Code to print syntax trees
- */
+ */ 
 
 #include <assert.h>
 #include <stdio.h>

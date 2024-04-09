@@ -3,7 +3,7 @@
 
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
-
+ 
 typedef enum{
 	// operators
 	GC_PLUS,
@@ -11,12 +11,23 @@ typedef enum{
 	GC_MULT,
 	GC_DIV,
 	GC_ASSG,
+	GC_EQ,
+	GC_NE,
+	GC_LE,
+	GC_LT,
+	GC_GE,
+	GC_GT,
+	GC_AND,
+	GC_OR,
+	GC_NOT,
 
 	// variables
 	GC_GLOBAL,
 	GC_LOCAL,
 	
 	// jumps
+	GC_IF,
+	GC_ELSE,
 	GC_GOTO,
 	GC_LABEL,
 
@@ -50,6 +61,7 @@ typedef struct Quad{
 	Operand* dest;
 	struct Quad* next;
 	int nargs;
+	char* label;
 } Quad;
 
 void generate_println();
@@ -62,8 +74,10 @@ void append_quad(Quad*);
 Symbol* create_tmp();
 void print_3ac();
 void create_params_3ac(ASTnode*);
+void create_if_3ac(ASTnode*);
 void print_global();
 int num_st_entries();
 void print_3ac_comment(Quad*);
+void create_if_condition(ASTnode*);
 
 #endif  /* __CODEGEN_H__ */
