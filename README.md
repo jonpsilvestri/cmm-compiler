@@ -6,12 +6,8 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
 ## PLANNED, BUT UNSUPORTED FEATURES
 
-- function returns
 - arithmetic operations (+,-,/,*)
 - while loops
-- if statements
-- 3 address code output
-
 
 ## Features
 
