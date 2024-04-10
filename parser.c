@@ -3,7 +3,7 @@
  * Author: Jonathan Silvestri
  * Purpose: Parser for C--
  */ 
-  
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +61,6 @@ extern int line_number;
 extern int chk_decl_flag;
 extern int print_ast_flag;
 extern int gen_code_flag;
-extern int gen_3ac_flag;
 SymbolTable* scope = NULL;
 bool in_function;
 ASTnode* root = NULL;
@@ -108,13 +107,11 @@ void prog(){
         if (print_ast_flag) {print_ast(root);}
         if (gen_code_flag){
             create_3ac(root);
+            //print_3ac();
+            //printf("\n\n\n");
             generate_mips();
             quad_ll = NULL;
             quad_ll_tail = NULL;
-        }
-        if (gen_3ac_flag){
-            create_3ac(root);
-            print_3ac();
         }
         pop_symbol_table();
         prog();
@@ -428,6 +425,28 @@ ASTnode* arith_exp(){
         ERRMSG();
     }
 }
+
+ASTnode* arithop(){
+    if (cur_tok == opADD){
+        match(opADD);
+        return NULL;
+    }
+    else if (cur_tok == opSUB){
+        match(opSUB);
+        return NULL;
+    }
+    else if (cur_tok == opMUL){
+        match(opMUL);
+        return NULL;
+    }
+    else if (cur_tok == opDIV){
+        match(opDIV);
+        return NULL;
+    }
+    ERRMSG();
+    return NULL;
+}
+
 ASTnode* relop(){
     if (cur_tok == opEQ){
         ASTnode* opEQ_node = make_ast_node(EQ);
@@ -462,6 +481,18 @@ ASTnode* relop(){
     else{
         ERRMSG();
     }
+}
+
+ASTnode* logical_op(){
+    if (cur_tok == opAND){
+        match(opAND);
+        return NULL;
+    }
+    else if (cur_tok == opOR){
+        match(opOR);
+        return NULL;
+    }
+    ERRMSG();
 }
 
 void match(Token expected) {
