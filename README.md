@@ -4,7 +4,7 @@ A compiler for C-- to MIPS32
 
 A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
-## PLANNED, BUT UNSUPORTED FEATURES
+## PLANNED, BUT UNSUPPORTED FEATURES
 
 - arithmetic operations (+,-,/,*)
 - while loops
