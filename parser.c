@@ -3,7 +3,7 @@
  * Author: Jonathan Silvestri
  * Purpose: Parser for C--
  */ 
-  
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +13,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "codegen.h"
-
+ 
 /*
  * token_name is an array of strings that gives, for each token value,
  * a string indicating the type of token.
@@ -61,7 +61,6 @@ extern int line_number;
 extern int chk_decl_flag;
 extern int print_ast_flag;
 extern int gen_code_flag;
-extern int gen_3ac_flag;
 SymbolTable* scope = NULL;
 bool in_function;
 ASTnode* root = NULL;
@@ -108,13 +107,11 @@ void prog(){
         if (print_ast_flag) {print_ast(root);}
         if (gen_code_flag){
             create_3ac(root);
+            //print_3ac();
+            //printf("\n\n\n");
             generate_mips();
             quad_ll = NULL;
             quad_ll_tail = NULL;
-        }
-        if (gen_3ac_flag){
-            create_3ac(root);
-            print_3ac();
         }
         pop_symbol_table();
         prog();
@@ -405,6 +402,11 @@ ASTnode* bool_exp(){
     ASTnode* rh_node = arith_exp();
     op_node->child0 = lh_node;
     op_node->child1 = rh_node;
+    if (cur_tok == opAND || cur_tok == opOR){
+        //bool_exp();
+        logical_op();
+        bool_exp();
+    }
     return op_node;
 }
 
@@ -414,20 +416,67 @@ ASTnode* arith_exp(){
         if (chk_decl_flag){
             if (check_global_scope(cur_id, false) == 0) {SNTXERR();}
         }
-
-        ASTnode* id_node = make_ast_node(IDENTIFIER);
         match(ID);
+        if (cur_tok == LPAREN){
+            fn_call();
+            
+            //return NULL;
+        }
+        if (cur_tok == opADD || cur_tok == opSUB || cur_tok == opMUL || cur_tok == opDIV){
+            arithop();
+            arith_exp();
+        }
+        
+        ASTnode* id_node = make_ast_node(IDENTIFIER);
         return id_node;
     }
-    else if (cur_tok == INTCON){
+    if (cur_tok == INTCON){
         ASTnode* int_node = make_ast_node(INTCONST);
         match(INTCON);
+        if (cur_tok == opADD || cur_tok == opSUB || cur_tok == opMUL || cur_tok == opDIV){
+            arithop();
+            arith_exp();
+
+        }
         return int_node;
+    }
+    if (cur_tok == LPAREN){
+        match(LPAREN);
+        arith_exp();
+        match(RPAREN);
+        return NULL;
+    }
+    if (cur_tok == opSUB){
+        match(opSUB);
+        arith_exp();
+        return NULL;
     }
     else{
         ERRMSG();
     }
 }
+
+ASTnode* arithop(){
+    if (cur_tok == opADD){
+        match(opADD);
+        return NULL;
+    }
+    else if (cur_tok == opSUB){
+        match(opSUB);
+        return NULL;
+    }
+    else if (cur_tok == opMUL){
+        match(opMUL);
+        return NULL;
+    }
+    else if (cur_tok == opDIV){
+        match(opDIV);
+        return NULL;
+    }
+    ERRMSG();
+    return NULL;
+}
+
 ASTnode* relop(){
     if (cur_tok == opEQ){
         ASTnode* opEQ_node = make_ast_node(EQ);
@@ -462,6 +511,18 @@ ASTnode* relop(){
     else{
         ERRMSG();
     }
+}
+
+ASTnode* logical_op(){
+    if (cur_tok == opAND){
+        match(opAND);
+        return NULL;
+    }
+    else if (cur_tok == opOR){
+        match(opOR);
+        return NULL;
+    }
+    ERRMSG();
 }
 
 void match(Token expected) {
