@@ -4,14 +4,10 @@ A compiler for C-- to MIPS32
 
 A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
-## PLANNED, BUT UNSUPORTED FEATURES
+## PLANNED, BUT UNSUPPORTED FEATURES
 
-- function returns
 - arithmetic operations (+,-,/,*)
 - while loops
-- if statements
-- 3 address code output
-
 
 ## Features
 
@@ -41,7 +37,7 @@ There are 4 optional flags for compilation
 
 ```--gen_code```: prints MIPS32 assembly code of the source code to stdout
 
-```--print_3ac```: prints the intermediary 3 address code to stdout
+```--gen_3ac```: prints the intermediary 3 address code to stdout
 
 The compiler can be run with all, none, or a combination of flags
 
@@ -50,7 +46,7 @@ The compiler can be run with all, none, or a combination of flags
 ```compile``` receives code from stdin. C-- code can be provided via the command line until and EOF token is entered.
 
 ```bash
-./compile [--chk_decl] [--print_ast] [--gen_code][--print_3ac]
+./compile [--chk_decl] [--print_ast] [--gen_code][--gen_3ac]
 ```
 
 to pipe input from a file, and produce a .s file:
