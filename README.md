@@ -6,8 +6,9 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
 ## PLANNED, BUT UNSUPPORTED FEATURES
 
-- arithmetic operations (+,-,/,*)
-- while loops
+- code generation for arithmetic expressions
+- nested function calls (function calls as function parameters)
+- boolean expression precidence opAND > opOR
 
 ## Features
 
