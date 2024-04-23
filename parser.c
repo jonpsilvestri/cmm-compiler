@@ -1,5 +1,5 @@
 /*
- * File: scanner-driver.c
+ * File: parser.c
  * Author: Jonathan Silvestri
  * Purpose: Parser for C--
  */ 
@@ -108,7 +108,6 @@ void prog(){
         if (gen_code_flag){
             create_3ac(root);
             //print_3ac();
-            //printf("\n\n\n");
             generate_mips();
             quad_ll = NULL;
             quad_ll_tail = NULL;
@@ -127,7 +126,6 @@ void prog(){
         var_decl();
         prog();
     }
-
     else{
         ERRMSG();
     }
@@ -319,7 +317,7 @@ ASTnode* return_stmt(){
         match(SEMI);
         return NULL;
     }
-    else if (cur_tok == ID || cur_tok == INTCON){
+    else if (cur_tok == ID || cur_tok == INTCON || cur_tok == opSUB || cur_tok == LPAREN){
         ASTnode* retval_node = arith_exp();
         match(SEMI);
         return retval_node;
@@ -345,6 +343,7 @@ ASTnode* assg_stmt(){
 
 ASTnode* fn_call(){
     //match(ID);
+    //printf("GETS TO FN CALL\n");
     if (chk_decl_flag){
         if (check_global_scope(cur_id, true) == 0 || check_local_scope(cur_id, false) == 1){
             SNTXERR();
@@ -354,7 +353,6 @@ ASTnode* fn_call(){
     match(LPAREN);
     num_args = 0;
     ASTnode* fn_call_params = opt_expr_list();
-
     if (chk_decl_flag){
         check_arg_num();
     }
@@ -365,7 +363,11 @@ ASTnode* fn_call(){
 }
 
 ASTnode* opt_expr_list(){
-    if (cur_tok == ID || cur_tok == INTCON){
+    // unary minus
+    if (cur_tok == opSUB){
+        match(opSUB);
+    }
+    if (cur_tok == ID || cur_tok == INTCON || cur_tok == LPAREN){
         ASTnode* expr_list_hd = expr_list();
         return expr_list_hd;
     }
@@ -392,7 +394,6 @@ ASTnode* expr_list(){
         }
         num_args++;
     }
-
     return expr_list_hd;
 }
 
@@ -402,79 +403,102 @@ ASTnode* bool_exp(){
     ASTnode* rh_node = arith_exp();
     op_node->child0 = lh_node;
     op_node->child1 = rh_node;
-    if (cur_tok == opAND || cur_tok == opOR){
+    if (cur_tok == opAND || cur_tok == opOR){ // if there is an logical op, op_node is the lhs
         //bool_exp();
-        logical_op();
-        bool_exp();
+        ASTnode* log_op_node = logical_op();
+        ASTnode* log_op_rhs = bool_exp();
+        log_op_node->child0 = op_node;
+        log_op_node->child1 = log_op_rhs;
+        return log_op_node;
     }
     return op_node;
 }
 
-ASTnode* arith_exp(){
-    if (cur_tok == ID){
-        cur_id = strdup(lexeme);
-        if (chk_decl_flag){
-            if (check_global_scope(cur_id, false) == 0) {SNTXERR();}
-        }
-        match(ID);
-        if (cur_tok == LPAREN){
-            fn_call();
-            
-            //return NULL;
-        }
-        if (cur_tok == opADD || cur_tok == opSUB || cur_tok == opMUL || cur_tok == opDIV){
-            arithop();
-            arith_exp();
-        }
-        
-        ASTnode* id_node = make_ast_node(IDENTIFIER);
-        return id_node;
-    }
-    if (cur_tok == INTCON){
-        ASTnode* int_node = make_ast_node(INTCONST);
-        match(INTCON);
-        if (cur_tok == opADD || cur_tok == opSUB || cur_tok == opMUL || cur_tok == opDIV){
-            arithop();
-            arith_exp();
 
-        }
-        return int_node;
-    }
-    if (cur_tok == LPAREN){
-        match(LPAREN);
-        arith_exp();
-        match(RPAREN);
-        return NULL;
-    }
-    if (cur_tok == opSUB){
-        match(opSUB);
-        arith_exp();
-        return NULL;
+ASTnode* arith_exp_rest(ASTnode* left){
+    if (cur_tok == opADD || cur_tok == opSUB){
+        int op = cur_tok;
+        match(op);
+        ASTnode* right = expr1();
+        ASTnode* root;
+        if (op == opADD){ root = make_ast_node(ADD);}
+        if (op == opSUB){ root = make_ast_node(SUB);}
+        root->child0 = left;
+        root->child1 = right;
+        return arith_exp_rest(root);
     }
     else{
-        ERRMSG();
+        return left;
     }
 }
 
-ASTnode* arithop(){
-    if (cur_tok == opADD){
-        match(opADD);
-        return NULL;
+ASTnode* expr1(){
+    ASTnode* n = expr2();
+    return expr1_rest(n);
+}
+
+ASTnode* expr1_rest(ASTnode* left){
+    if (cur_tok == opMUL || cur_tok == opDIV){
+        int op = cur_tok;
+        match(op);
+        ASTnode* right = expr2();
+        ASTnode* root;
+        if (op == opMUL){ root = make_ast_node(MUL);}
+        if (op == opDIV){ root = make_ast_node(DIV);}
+        root->child0 = left;
+        root->child1 = right;
+        return expr1_rest(root);
     }
-    else if (cur_tok == opSUB){
+    else{
+        return left;
+    }
+}
+
+ASTnode* expr2(){
+    if (cur_tok == opSUB){
         match(opSUB);
-        return NULL;
+        ASTnode* n = expr2();
+        ASTnode* root = make_ast_node(UMINUS);
+        root->child0 = n;
+        return root;
     }
-    else if (cur_tok == opMUL){
-        match(opMUL);
-        return NULL;
+    else{
+        return expr3();
     }
-    else if (cur_tok == opDIV){
-        match(opDIV);
-        return NULL;
+}
+
+ASTnode* expr3(){
+    if (cur_tok == ID){
+        cur_id = strdup(lexeme);
+        match(ID);
+        if (cur_tok == LPAREN){
+            return fn_call();
+        }
+
+        else if (chk_decl_flag){
+            if (check_global_scope(cur_id, false) == 0 && check_local_scope(cur_id, false) == 0){
+                SNTXERR();
+            }
+        }
+        ASTnode* id_node = make_ast_node(IDENTIFIER);
+        return id_node;
     }
-    ERRMSG();
-    return NULL;
+    else if (cur_tok == LPAREN){
+        match(LPAREN);
+        ASTnode* n = arith_exp();
+        match(RPAREN);
+        return n;
+    }
+    else if (cur_tok == INTCON){
+        ASTnode* int_node = make_ast_node(INTCONST);
+        match(INTCON);
+        return int_node;
+    }
+}
+
+ASTnode* arith_exp(){
+    ASTnode* n = expr1();
+    return arith_exp_rest(n);
 }
 
 ASTnode* relop(){
@@ -516,11 +540,12 @@ ASTnode* relop(){
 ASTnode* logical_op(){
     if (cur_tok == opAND){
         match(opAND);
-        return NULL;
+        
+        return make_ast_node(AND);
     }
     else if (cur_tok == opOR){
         match(opOR);
-        return NULL;
+        return make_ast_node(OR);
     }
     ERRMSG();
 }
@@ -530,6 +555,7 @@ void match(Token expected) {
         cur_tok = get_token();
     }   
     else {
+        fprintf(stderr, "EXPECTED TOKEN: %s\n", token_name[expected]);
         ERRMSG();
     }
 }
@@ -553,7 +579,16 @@ int get_num_args(Symbol* function_ref){
     return function_ref->num_args;
 }
 
+/*
+    -------------NOTICE: THIS FUNCTION IS NOT USED----------------
+    This function is used to check if the number of arguments in function calls
+    matches the number of arguments in the function definition, but is currently
+    broken due to the lack of support for nested function calls.
+
+    REMOVE THE RETURN STATEMENT TO DEBUG
+*/
 void check_arg_num(){
+    return;
     SymbolTable* cur_scope = scope;
     while (cur_scope != NULL){
         Symbol* cur = cur_scope->head;
@@ -687,7 +722,6 @@ void update_arg_list(){
  */
 NodeType ast_node_type(void *ptr){
     ASTnode* node = (ASTnode*)ptr;
-    //printf("%d\n", node->node_type);
     return node->node_type;
 }
 

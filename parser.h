@@ -27,8 +27,14 @@ ASTnode* return_stmt();
 ASTnode* while_stmt();
 ASTnode* if_stmt();
 ASTnode* relop();
-ASTnode* arithop();
 ASTnode* logical_op();
+ASTnode* arith_exp_rest();
+ASTnode* expr1();
+ASTnode* expr1_rest();
+ASTnode* expr2();
+ASTnode* expr3();
+
+ASTnode* arithop();
 
 void SNTXERR();
 
