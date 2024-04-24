@@ -6,9 +6,7 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 
 ## PLANNED, BUT UNSUPPORTED FEATURES
 
-- code generation for arithmetic expressions
-- nested function calls (function calls as function parameters)
-- boolean expression precidence opAND > opOR
+- arithmetic expression code generation
 
 ## Features
 
@@ -17,7 +15,7 @@ A description of the C-- Language can be found [here](CMM-LANGUAGE-SPEC.md)
 - Semantic Checking
 - Abstract Syntax Tree Generation
 - Intermediate Code Generation
-- Arithmetic Expression Evaluation (coming soon)
+- Arithmetic Expression Evaluation
 - MIPS32 Assembly Code Generation
 
 ### Installation
