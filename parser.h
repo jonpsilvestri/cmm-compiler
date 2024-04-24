@@ -33,8 +33,11 @@ ASTnode* expr1();
 ASTnode* expr1_rest();
 ASTnode* expr2();
 ASTnode* expr3();
+ASTnode* bool1();
+ASTnode* bool_exp_rest(ASTnode*);
+ASTnode* bool1_rest(ASTnode*);
+ASTnode* term();
 
-ASTnode* arithop();
 
 void SNTXERR();
 
@@ -60,7 +63,7 @@ int check_global_scope(char*, bool);
 void push_symbol_table();
 void pop_symbol_table();
 void update_arg_num();
-void check_arg_num();
+void check_arg_num(ASTnode*, char*);
 int get_num_args(Symbol*);
 
 

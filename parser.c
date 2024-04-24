@@ -349,12 +349,14 @@ ASTnode* fn_call(){
             SNTXERR();
         }
     }
+    char* fn_call_id = strdup(cur_id);
     ASTnode* fn_call_node = make_ast_node(FUNC_CALL);
     match(LPAREN);
     num_args = 0;
+
     ASTnode* fn_call_params = opt_expr_list();
     if (chk_decl_flag){
-        check_arg_num();
+        check_arg_num(fn_call_params, fn_call_id);
     }
     num_args = 0;
     match(RPAREN);
@@ -364,10 +366,7 @@ ASTnode* fn_call(){
 
 ASTnode* opt_expr_list(){
     // unary minus
-    if (cur_tok == opSUB){
-        match(opSUB);
-    }
-    if (cur_tok == ID || cur_tok == INTCON || cur_tok == LPAREN){
+    if (cur_tok == ID || cur_tok == INTCON || cur_tok == LPAREN || cur_tok == opSUB){
         ASTnode* expr_list_hd = expr_list();
         return expr_list_hd;
     }
@@ -398,19 +397,45 @@ ASTnode* expr_list(){
 }
 
 ASTnode* bool_exp(){
+    ASTnode* term1 = bool1();
+    return bool_exp_rest(term1);
+}
+
+ASTnode* bool1(){
+    ASTnode* lh_term = term();
+    return bool1_rest(lh_term);
+}
+
+ASTnode* bool_exp_rest(ASTnode* left){
+    if (cur_tok == opOR){
+        match(opOR);
+        ASTnode* right = bool1();
+        ASTnode* root = make_ast_node(OR);
+        root->child0 = left;
+        root->child1 = right;
+        return bool_exp_rest(root);
+    }
+    return left;
+}
+
+ASTnode* bool1_rest(ASTnode* left){
+    if (cur_tok == opAND){
+        match(opAND);
+        ASTnode* right = term();
+        ASTnode* root = make_ast_node(AND);
+        root->child0 = left;
+        root->child1 = right;
+        return bool1_rest(root);
+    }
+    return left;
+}
+
+ASTnode* term(){
     ASTnode* lh_node = arith_exp();
     ASTnode* op_node = relop();
     ASTnode* rh_node = arith_exp();
     op_node->child0 = lh_node;
     op_node->child1 = rh_node;
-    if (cur_tok == opAND || cur_tok == opOR){ // if there is an logical op, op_node is the lhs
-        //bool_exp();
-        ASTnode* log_op_node = logical_op();
-        ASTnode* log_op_rhs = bool_exp();
-        log_op_node->child0 = op_node;
-        log_op_node->child1 = log_op_rhs;
-        return log_op_node;
-    }
     return op_node;
 }
 
@@ -540,7 +565,6 @@ ASTnode* relop(){
 ASTnode* logical_op(){
     if (cur_tok == opAND){
         match(opAND);
-        
         return make_ast_node(AND);
     }
     else if (cur_tok == opOR){
@@ -587,21 +611,23 @@ int get_num_args(Symbol* function_ref){
 
     REMOVE THE RETURN STATEMENT TO DEBUG
 */
-void check_arg_num(){
-    return;
-    SymbolTable* cur_scope = scope;
-    while (cur_scope != NULL){
-        Symbol* cur = cur_scope->head;
-        while (cur != NULL){
-            // if new_id matches an existing id
-            if (cur->is_func && strcmp(cur->id, last_function_id) == 0 && chk_decl_flag){
-                if (cur->num_args != num_args) {SNTXERR();}
-                return;
-            }
-            cur = cur->next;
-        }
-        cur_scope = cur_scope->prev_scope;
+void check_arg_num(ASTnode* arg_list, char* fn_id){
+    int na = 0;
+    ASTnode* curN = arg_list;
+    while (curN != NULL){
+        na++;
+        curN = curN->child1;
     }
+    Symbol* cur = scope->prev_scope->head;
+    while (cur != NULL){
+        // if new_id matches an existing id
+        if (cur->is_func && strcmp(cur->id, fn_id) == 0 && chk_decl_flag){
+            if (cur->num_args != na) {SNTXERR();}
+            return;
+        }
+        cur = cur->next;
+    }
+    
 }
 
 void update_arg_num(){
