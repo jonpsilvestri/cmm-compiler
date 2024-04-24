@@ -78,6 +78,7 @@ void create_if_3ac(ASTnode*);
 void print_global();
 int num_st_entries();
 void print_3ac_comment(Quad*);
-void create_if_condition(ASTnode*);
+void make_if_expr(ASTnode*);
+void make_while_expr(ASTnode*);
 
 #endif  /* __CODEGEN_H__ */

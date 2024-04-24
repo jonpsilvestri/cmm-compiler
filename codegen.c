@@ -10,7 +10,11 @@ int tmp_count = 0;
 extern char* cur_id;
 extern SymbolTable* scope;
 
+int nested_depth = 1;
 int label_count = 0;
+
+int while_depth = 1;
+int while_count = 0;
 int fp_offset = 0;
 int sp_offset = 0;
 
@@ -103,6 +107,42 @@ void generate_mips(){
                 if (rhs_eq->is_global) {printf("  lw $t1, _%s\n", rhs_eq->id);}
                 else{printf("  lw $t1, %d($fp)\n", rhs_eq->offset);}
                 printf("  beq $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_NE:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_ne = cur_quad->src1->val.st_ref;
+                if (lhs_ne->is_global) {printf("  lw $t0, _%s\n", lhs_ne->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_ne->offset);}
+
+                Symbol* rhs_ne = cur_quad->src2->val.st_ref;
+                if (rhs_ne->is_global) {printf("  lw $t1, _%s\n", rhs_ne->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_ne->offset);}
+                printf("  bne $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_GE:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_ge = cur_quad->src1->val.st_ref;
+                if (lhs_ge->is_global) {printf("  lw $t0, _%s\n", lhs_ge->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_ge->offset);}
+
+                Symbol* rhs_ge = cur_quad->src2->val.st_ref;
+                if (rhs_ge->is_global) {printf("  lw $t1, _%s\n", rhs_ge->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_ge->offset);}
+                printf("  bge $t0, $t1, _%s\n", cur_quad->label);
+                break;
+
+            case GC_LE:
+                print_3ac_comment(cur_quad);
+                Symbol* lhs_le = cur_quad->src1->val.st_ref;
+                if (lhs_le->is_global) {printf("  lw $t0, _%s\n", lhs_le->id);}
+                else {printf("  lw $t0, %d($fp)\n", lhs_le->offset);}
+
+                Symbol* rhs_le = cur_quad->src2->val.st_ref;
+                if (rhs_le->is_global) {printf("  lw $t1, _%s\n", rhs_le->id);}
+                else{printf("  lw $t1, %d($fp)\n", rhs_le->offset);}
+                printf("  ble $t0, $t1, _%s\n", cur_quad->label);
                 break;
 
             case GC_LT:
@@ -213,6 +253,18 @@ void print_3ac_comment(Quad* cur_quad){
                 printf("#if %s < %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
                 break;
 
+            case GC_NE:
+                printf("#if %s != %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_LE:
+                printf("#if %s <= %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_GE:
+                printf("#if %s >= %s, goto %s\n", cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id, cur_quad->label);
+                break;
+
             case GC_GOTO:
                 printf("#goto %s\n", cur_quad->label);
                 break;
@@ -283,6 +335,24 @@ void print_3ac(){
                 printf("goto %s\n", cur_quad->label);
                 break;
 
+            case GC_LE:
+                Operand* le_lhs = cur_quad->src1;
+                Operand* le_rhs = cur_quad->src2;
+                printf("if %s <= %s, goto %s\n", le_lhs->val.st_ref->id, le_rhs->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_NE:
+                Operand* ne_lhs = cur_quad->src1;
+                Operand* ne_rhs = cur_quad->src2;
+                printf("if %s != %s, goto %s\n", ne_lhs->val.st_ref->id, ne_rhs->val.st_ref->id, cur_quad->label);
+                break;
+
+            case GC_GE:
+                Operand* ge_lhs = cur_quad->src1;
+                Operand* ge_rhs = cur_quad->src2;
+                printf("if %s >= %s, goto %s\n", ge_lhs->val.st_ref->id, ge_rhs->val.st_ref->id, cur_quad->label);
+                break;
+
             case GC_GT:
                 Operand* gt_lhs = cur_quad->src1;
                 Operand* gt_rhs = cur_quad->src2;
@@ -336,7 +406,8 @@ void print_3ac(){
 
 void create_if_3ac(ASTnode* cur_node){
     // if (condition) goto TRUE
-    create_if_condition(cur_node->child0);
+    nested_depth++;
+    make_if_expr(cur_node);
     // else goto FALSE
     char* else_label = (char*)malloc(sizeof(char)*15);
     sprintf(else_label, "ELSE%d", label_count);
@@ -369,16 +440,22 @@ void create_if_3ac(ASTnode* cur_node){
     // AFTER LABEL
     Quad* after_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); after_label_quad->label = strdup(after_label);
     append_quad(after_label_quad);
-    label_count++;
+    label_count += nested_depth; // NEEDS TO BE INCREMENTED AS MANY TIMES AS THERE WERE NESTED IFS
+    nested_depth = 1;
 }
 
-void create_if_condition(ASTnode* cur_node){
+
+
+void make_if_expr(ASTnode* cur_node){
+    cur_node = cur_node->child0;
     ASTnode* lh_node = cur_node->child0;
     ASTnode* rh_node = cur_node->child1;
     create_3ac(lh_node); create_3ac(rh_node); // rhs and lhs will be assigned temps if they're intconsts
 
     char* label = (char*)malloc(sizeof(char)*15);
+
     sprintf(label, "TRUE%d", label_count);
+
     switch(cur_node->node_type){
         Quad* relop_quad;
         case GT:
@@ -405,6 +482,46 @@ void create_if_condition(ASTnode* cur_node){
             append_quad(relop_quad);
             break;
     }
+}
+
+void make_while_expr(ASTnode* cur_node){
+    cur_node = cur_node->child0;
+    ASTnode* lh_node = cur_node->child0;
+    ASTnode* rh_node = cur_node->child1;
+    create_3ac(lh_node); create_3ac(rh_node); // rhs and lhs will be assigned temps if they're intconsts
+
+    char* label = (char*)malloc(sizeof(char)*15);
+
+    sprintf(label, "WHILEDONE%d", while_count);
+
+    switch(cur_node->node_type){
+        Quad* relop_quad;
+        case GT:
+            Operand* lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            Operand* rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_LE, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        case LT:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_GE, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+        
+        case EQ:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_NE, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+    }
+
+
 }
 
 void create_3ac(ASTnode* cur_node){
@@ -480,6 +597,28 @@ void create_3ac(ASTnode* cur_node){
 
         case IF:
             create_if_3ac(cur_node);
+            break;
+
+        case WHILE:
+            while_depth++;
+            char* while_label = (char*)malloc(sizeof(char)*15);
+            sprintf(while_label, "WHILE%d", while_count);
+            Quad* while_top_label = newinstr(GC_LABEL, NULL, NULL, NULL); while_top_label->label = strdup(while_label);
+            append_quad(while_top_label);
+            make_while_expr(cur_node);
+            while_count++;
+            create_3ac(cur_node->child1);
+            while_count--;
+            Quad* while_jump_quad = newinstr(GC_GOTO, NULL, NULL, NULL); while_jump_quad->label = strdup(while_label);
+            append_quad(while_jump_quad);
+            
+            char* while_done_label = (char*)malloc(sizeof(char)*15);
+            sprintf(while_done_label, "WHILEDONE%d", while_count);
+            Quad* while_done_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); while_done_label_quad->label = strdup(while_done_label);
+            append_quad(while_done_label_quad);
+
+            while_count += while_depth;
+            while_depth = 1;
             break;
 
         case INTCONST:

@@ -1,7 +1,7 @@
-# Compiled Libraries #
+# Compiled objects   #
 ######################
 *.o
+compile
 
-# README and md #
-#################
-*.md
+
+*.txt
