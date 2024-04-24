@@ -1,7 +1,4 @@
-# Compiled objects   #
-######################
 *.o
 compile
-
-
 *.txt
+*.s

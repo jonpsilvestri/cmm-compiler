@@ -45,6 +45,14 @@ void generate_mips(){
                 printf("  la $sp, %d($sp)\n", num_st_entries()*-4);
                 break;
             
+            case GC_ADD:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                printf("  add $t0, $t0, $t1\n");
+                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                break;
+
             case GC_ASSG:
                 print_3ac_comment(cur_quad);
                 Operand* lhs = cur_quad->dest;
@@ -215,6 +223,7 @@ void generate_mips(){
                 printf("  jr $ra\n");
                 break;
             }
+
         cur_quad = cur_quad->next;
     }
     quad_ll = NULL;
@@ -267,6 +276,10 @@ void print_3ac_comment(Quad* cur_quad){
 
             case GC_GOTO:
                 printf("#goto %s\n", cur_quad->label);
+                break;
+
+            case GC_ADD:
+                printf("#add %s = %s + %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
                 break;
 
             case GC_ASSG:
@@ -395,6 +408,10 @@ void print_3ac(){
                 printf("retrieve %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
                 break;
 
+            case GC_ADD:
+                printf("add %s, %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
             default:
                 printf("ERROR IN PRINT_3AC:\n UNKNOWN OP: %d\n", cur_quad->op);
                 exit(-1);
@@ -402,6 +419,173 @@ void print_3ac(){
         }
         cur_quad = cur_quad->next;
     }
+}
+
+void create_3ac(ASTnode* cur_node){
+    if (cur_node == NULL){
+        return;
+    }
+    switch(cur_node->node_type){
+       
+        Quad* this_quad;
+        
+        case FUNC_DEF:
+            Operand* funcdef_operand = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            this_quad = newinstr(GC_ENTER, funcdef_operand, NULL, NULL);
+            this_quad->nargs = get_num_args(cur_node->st_ref);
+            append_quad(this_quad);
+            create_3ac(cur_node->child0);
+            break;
+            
+        case STMT_LIST:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            break;
+
+        case ASSG:
+            // rhs is an integer. must create temp
+            if (cur_node->child1->node_type == INTCONST){
+                create_3ac(cur_node->child1);
+                create_3ac(cur_node->child0);
+                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
+                append_quad(this_quad);
+            }
+            // rhs is an identifier, make assg quad
+            else if (cur_node->child1->node_type == IDENTIFIER){
+                create_3ac(cur_node->child0);
+                create_3ac(cur_node->child1);
+                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
+                append_quad(this_quad);
+            }
+            else{
+                create_3ac(cur_node->child0); // child0 should be just an identifier
+                create_3ac(cur_node->child1); // child1 should be an expression
+                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
+                append_quad(this_quad);
+            }
+            
+            break;
+
+        case ADD:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            Symbol* add_dest = create_tmp();
+            Operand* add_dest_operand = make_operand(OPERAND_ST_PTR, add_dest, 0);
+            cur_node->st_ref = add_dest;
+            Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+            this_quad = newinstr(GC_ADD, lhs, rhs, add_dest_operand);
+            append_quad(this_quad);
+            break;
+
+        case FUNC_CALL:
+            // probably need a gen_params function for this to generate PARAM quads
+            create_params_3ac(cur_node->child0); // process parameters (expr_list)
+            Operand* func_ref = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            this_quad = newinstr(GC_CALL, func_ref, NULL, NULL);
+            this_quad->nargs = get_num_args(cur_node->st_ref);
+            append_quad(this_quad);
+            // bogus return value
+            Symbol* ret_val_tmp = create_tmp();
+            Operand* ret_val = make_operand(OPERAND_ST_PTR, ret_val_tmp, 0);
+            this_quad = newinstr(GC_RETRIEVE, func_ref, NULL, ret_val);
+            append_quad(this_quad);
+            break;
+
+        case RETURN:
+            if (cur_node->child0 == NULL){
+                Symbol* retval_tmp = create_tmp();
+                Operand* return_val_operand = make_operand(OPERAND_INTCONST, NULL, -1);
+                Operand* return_st_operand = make_operand(OPERAND_ST_PTR, retval_tmp, 0);
+                Quad* assg_quad = newinstr(GC_ASSG, return_val_operand, NULL, return_st_operand);
+                append_quad(assg_quad);
+                this_quad = newinstr(GC_RETURN, return_st_operand, NULL, NULL);
+                append_quad(this_quad);
+            }
+            break;
+
+        case EXPR_LIST:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            break;
+
+        case IF:
+            create_if_3ac(cur_node);
+            break;
+
+        case WHILE:
+            while_depth++;
+            char* while_label = (char*)malloc(sizeof(char)*15);
+            sprintf(while_label, "WHILE%d", while_count);
+            Quad* while_top_label = newinstr(GC_LABEL, NULL, NULL, NULL); while_top_label->label = strdup(while_label);
+            append_quad(while_top_label);
+            make_while_expr(cur_node);
+            while_count++;
+            create_3ac(cur_node->child1);
+            while_count--;
+            Quad* while_jump_quad = newinstr(GC_GOTO, NULL, NULL, NULL); while_jump_quad->label = strdup(while_label);
+            append_quad(while_jump_quad);
+            
+            char* while_done_label = (char*)malloc(sizeof(char)*15);
+            sprintf(while_done_label, "WHILEDONE%d", while_count);
+            Quad* while_done_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); while_done_label_quad->label = strdup(while_done_label);
+            append_quad(while_done_label_quad);
+
+            while_count += while_depth;
+            while_depth = 1;
+            break;
+
+        case INTCONST:
+            Symbol* tmp_stref = create_tmp(); // create reference for a temp in the ST
+            cur_node->st_ref = tmp_stref; // give the current node a st ref
+            Operand* int_operand = make_operand(OPERAND_INTCONST, NULL, cur_node->int_const_val);
+            Operand* new_tmp = make_operand(OPERAND_ST_PTR, tmp_stref, 0);
+            Quad* new_temp_instr = newinstr(GC_ASSG, int_operand, NULL, new_tmp);
+            append_quad(new_temp_instr);
+            break;
+
+        case IDENTIFIER:
+            break;
+
+        default:
+            printf("ERROR IN CREATE_3AC:\n UNKNOWN NODE TYPE: %d\n", cur_node->node_type);
+            exit(-1);
+            break;
+    }
+    if (cur_node->node_type == FUNC_DEF){
+        Operand* func_ref = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+        Quad* leave_quad = newinstr(GC_LEAVE, func_ref, NULL, NULL);
+        append_quad(leave_quad);
+        // implicit return
+        Operand* implicit_return = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+        Quad* ret_void = newinstr(GC_RETURN_VOID, implicit_return, NULL, NULL);
+        append_quad(ret_void);
+
+        int offset = -4;
+        Symbol* cur_symbol = scope->head;
+        while (cur_symbol != NULL){
+            cur_symbol->offset = offset;
+            offset -= 4;
+            cur_symbol = cur_symbol->next;
+        }
+
+        offset = 8;
+        int i = 0;
+        while (cur_node->arg_list[i+1] != NULL){
+            cur_node->arg_list[i+1]->offset = offset;
+            offset += 4;
+            i++;
+        }
+        
+
+    }
+    return;
 }
 
 void create_if_3ac(ASTnode* cur_node){
@@ -522,150 +706,6 @@ void make_while_expr(ASTnode* cur_node){
     }
 
 
-}
-
-void create_3ac(ASTnode* cur_node){
-    if (cur_node == NULL){
-        return;
-    }
-    switch(cur_node->node_type){
-        Quad* this_quad;
-        case FUNC_DEF:
-            Operand* funcdef_operand = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
-            this_quad = newinstr(GC_ENTER, funcdef_operand, NULL, NULL);
-            this_quad->nargs = get_num_args(cur_node->st_ref);
-            append_quad(this_quad);
-            create_3ac(cur_node->child0);
-            break;
-            
-        case STMT_LIST:
-            create_3ac(cur_node->child0);
-            create_3ac(cur_node->child1);
-            break;
-
-        case ASSG:
-            // rhs is an integer. must create temp
-            if (cur_node->child1->node_type == INTCONST){
-                create_3ac(cur_node->child1);
-                create_3ac(cur_node->child0);
-                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
-                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
-                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
-                append_quad(this_quad);
-            }
-            // rhs is an identifier, make assg quad
-            else if (cur_node->child1->node_type == IDENTIFIER){
-                create_3ac(cur_node->child0);
-                create_3ac(cur_node->child1);
-                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
-                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
-                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
-                append_quad(this_quad);
-            }
-            break;
-
-        case FUNC_CALL:
-            // probably need a gen_params function for this to generate PARAM quads
-            create_params_3ac(cur_node->child0); // process parameters (expr_list)
-            Operand* func_ref = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
-            this_quad = newinstr(GC_CALL, func_ref, NULL, NULL);
-            this_quad->nargs = get_num_args(cur_node->st_ref);
-            append_quad(this_quad);
-            // bogus return value
-            Symbol* ret_val_tmp = create_tmp();
-            Operand* ret_val = make_operand(OPERAND_ST_PTR, ret_val_tmp, 0);
-            this_quad = newinstr(GC_RETRIEVE, func_ref, NULL, ret_val);
-            append_quad(this_quad);
-            break;
-
-        case RETURN:
-            if (cur_node->child0 == NULL){
-                Symbol* retval_tmp = create_tmp();
-                Operand* return_val_operand = make_operand(OPERAND_INTCONST, NULL, -1);
-                Operand* return_st_operand = make_operand(OPERAND_ST_PTR, retval_tmp, 0);
-                Quad* assg_quad = newinstr(GC_ASSG, return_val_operand, NULL, return_st_operand);
-                append_quad(assg_quad);
-                this_quad = newinstr(GC_RETURN, return_st_operand, NULL, NULL);
-                append_quad(this_quad);
-            }
-            break;
-
-        case EXPR_LIST:
-            create_3ac(cur_node->child0);
-            create_3ac(cur_node->child1);
-            break;
-
-        case IF:
-            create_if_3ac(cur_node);
-            break;
-
-        case WHILE:
-            while_depth++;
-            char* while_label = (char*)malloc(sizeof(char)*15);
-            sprintf(while_label, "WHILE%d", while_count);
-            Quad* while_top_label = newinstr(GC_LABEL, NULL, NULL, NULL); while_top_label->label = strdup(while_label);
-            append_quad(while_top_label);
-            make_while_expr(cur_node);
-            while_count++;
-            create_3ac(cur_node->child1);
-            while_count--;
-            Quad* while_jump_quad = newinstr(GC_GOTO, NULL, NULL, NULL); while_jump_quad->label = strdup(while_label);
-            append_quad(while_jump_quad);
-            
-            char* while_done_label = (char*)malloc(sizeof(char)*15);
-            sprintf(while_done_label, "WHILEDONE%d", while_count);
-            Quad* while_done_label_quad = newinstr(GC_LABEL, NULL, NULL, NULL); while_done_label_quad->label = strdup(while_done_label);
-            append_quad(while_done_label_quad);
-
-            while_count += while_depth;
-            while_depth = 1;
-            break;
-
-        case INTCONST:
-            Symbol* tmp_stref = create_tmp(); // create reference for a temp in the ST
-            cur_node->st_ref = tmp_stref; // give the current node a st ref
-            Operand* int_operand = make_operand(OPERAND_INTCONST, NULL, cur_node->int_const_val);
-            Operand* new_tmp = make_operand(OPERAND_ST_PTR, tmp_stref, 0);
-            Quad* new_temp_instr = newinstr(GC_ASSG, int_operand, NULL, new_tmp);
-            append_quad(new_temp_instr);
-            break;
-
-        case IDENTIFIER:
-            break;
-
-        default:
-            printf("ERROR IN CREATE_3AC:\n UNKNOWN NODE TYPE: %d\n", cur_node->node_type);
-            exit(-1);
-            break;
-    }
-    if (cur_node->node_type == FUNC_DEF){
-        Operand* func_ref = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
-        Quad* leave_quad = newinstr(GC_LEAVE, func_ref, NULL, NULL);
-        append_quad(leave_quad);
-        // implicit return
-        Operand* implicit_return = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
-        Quad* ret_void = newinstr(GC_RETURN_VOID, implicit_return, NULL, NULL);
-        append_quad(ret_void);
-
-        int offset = -4;
-        Symbol* cur_symbol = scope->head;
-        while (cur_symbol != NULL){
-            cur_symbol->offset = offset;
-            offset -= 4;
-            cur_symbol = cur_symbol->next;
-        }
-
-        offset = 8;
-        int i = 0;
-        while (cur_node->arg_list[i+1] != NULL){
-            cur_node->arg_list[i+1]->offset = offset;
-            offset += 4;
-            i++;
-        }
-        
-
-    }
-    return;
 }
 
 void create_params_3ac(ASTnode* cur_node){

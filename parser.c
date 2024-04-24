@@ -61,6 +61,7 @@ extern int line_number;
 extern int chk_decl_flag;
 extern int print_ast_flag;
 extern int gen_code_flag;
+extern int gen_3ac_flag;
 SymbolTable* scope = NULL;
 bool in_function;
 ASTnode* root = NULL;
@@ -76,7 +77,7 @@ int parse(){
     scope = (SymbolTable*)malloc(sizeof(SymbolTable));
     num_args = 0;
 
-    if (gen_code_flag){
+    if (gen_code_flag || gen_3ac_flag){
         add_symbol("println", true);
         scope->head->num_args = 1;
     }
@@ -111,6 +112,10 @@ void prog(){
             generate_mips();
             quad_ll = NULL;
             quad_ll_tail = NULL;
+        }
+        if (gen_3ac_flag){
+            create_3ac(root);
+            print_3ac();
         }
         pop_symbol_table();
         prog();

@@ -1,9 +1,10 @@
-int x, y;
+int main(){
+    int i;
 
-int f() {
-    x = 0;
-}
+    i = 0;
 
-int g(int x) {
-    g(-g(0) / -g(1) + -f() - -g(1) * -f());
+    while (i < 10){
+        println(i);
+        i = i + 1;
+    }
 }

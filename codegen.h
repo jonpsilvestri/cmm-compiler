@@ -6,10 +6,11 @@
  
 typedef enum{
 	// operators
-	GC_PLUS,
-	GC_MINUS,
+	GC_ADD,
+	GC_SUB,
 	GC_MULT,
 	GC_DIV,
+	GC_UMINUS,
 	GC_ASSG,
 	GC_EQ,
 	GC_NE,
