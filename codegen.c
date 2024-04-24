@@ -53,6 +53,37 @@ void generate_mips(){
                 printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
                 break;
 
+            case GC_SUB:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                printf("  sub $t0, $t0, $t1\n");
+                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                break;
+
+            case GC_MULT:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                printf("  mul $t0, $t0, $t1\n");
+                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                break;
+
+            case GC_DIV:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                printf("  div $t0, $t0, $t1\n");
+                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                break;
+
+            case GC_UMINUS:
+                print_3ac_comment(cur_quad);
+                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                printf("  neg $t0, $t0\n");
+                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                break;
+
             case GC_ASSG:
                 print_3ac_comment(cur_quad);
                 Operand* lhs = cur_quad->dest;
@@ -282,6 +313,22 @@ void print_3ac_comment(Quad* cur_quad){
                 printf("#add %s = %s + %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
                 break;
 
+            case GC_SUB:
+                printf("#sub %s = %s - %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_MULT:
+                printf("#mul %s = %s * %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_DIV:
+                printf("#div %s = %s / %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_UMINUS:
+                printf("#uminus %s = -%s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
+                break;
+
             case GC_ASSG:
                 if (cur_quad->src1->operand_type == OPERAND_ST_PTR){
                     printf("#assign  %s = %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
@@ -412,6 +459,22 @@ void print_3ac(){
                 printf("add %s, %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
                 break;
 
+            case GC_SUB:
+                printf("sub %s, %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_MULT:
+                printf("mul %s, %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_DIV:
+                printf("div %s, %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id, cur_quad->src2->val.st_ref->id);
+                break;
+
+            case GC_UMINUS:
+                printf("uminus -%s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
+                break;
+
             default:
                 printf("ERROR IN PRINT_3AC:\n UNKNOWN OP: %d\n", cur_quad->op);
                 exit(-1);
@@ -472,15 +535,61 @@ void create_3ac(ASTnode* cur_node){
             
             break;
 
+        case UMINUS:
+            create_3ac(cur_node->child0);
+            Symbol* uminus_tmp = create_tmp();
+            cur_node->st_ref = uminus_tmp;
+            Operand* uminus_dst = make_operand(OPERAND_ST_PTR, uminus_tmp, 0);
+            Operand* uminus_src = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            this_quad = newinstr(GC_UMINUS, uminus_src, NULL, uminus_dst);
+            append_quad(this_quad);
+            break;
+
+        case MUL:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            Symbol* mul_dest = create_tmp();
+            Operand* mul_dest_operand = make_operand(OPERAND_ST_PTR, mul_dest, 0);
+            cur_node->st_ref = mul_dest;
+            Operand* mul_lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            Operand* mul_rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+            this_quad = newinstr(GC_MULT, mul_lhs, mul_rhs, mul_dest_operand);
+            append_quad(this_quad);
+            break;
+
+        case DIV:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            Symbol* div_dest = create_tmp();
+            Operand* div_dest_operand = make_operand(OPERAND_ST_PTR, div_dest, 0);
+            cur_node->st_ref = div_dest;
+            Operand* div_lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            Operand* div_rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+            this_quad = newinstr(GC_DIV, div_lhs, div_rhs, div_dest_operand);
+            append_quad(this_quad);
+            break;
+
         case ADD:
             create_3ac(cur_node->child0);
             create_3ac(cur_node->child1);
             Symbol* add_dest = create_tmp();
             Operand* add_dest_operand = make_operand(OPERAND_ST_PTR, add_dest, 0);
             cur_node->st_ref = add_dest;
-            Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
-            Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
-            this_quad = newinstr(GC_ADD, lhs, rhs, add_dest_operand);
+            Operand* add_lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            Operand* add_rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+            this_quad = newinstr(GC_ADD, add_lhs, add_rhs, add_dest_operand);
+            append_quad(this_quad);
+            break;
+
+        case SUB:
+            create_3ac(cur_node->child0);
+            create_3ac(cur_node->child1);
+            Symbol* sub_dest = create_tmp();
+            Operand* sub_dest_operand = make_operand(OPERAND_ST_PTR, sub_dest, 0);
+            cur_node->st_ref = sub_dest;
+            Operand* sub_lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+            Operand* sub_rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
+            this_quad = newinstr(GC_SUB, sub_lhs, sub_rhs, sub_dest_operand);
             append_quad(this_quad);
             break;
 
