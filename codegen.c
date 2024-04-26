@@ -47,41 +47,160 @@ void generate_mips(){
             
             case GC_ADD:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
-                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                // local_var + local_var
+                if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // global_var + local_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // local_var + global_var
+                else if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                // global_var + global_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                
+                // do addition
                 printf("  add $t0, $t0, $t1\n");
-                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is local
+                if (cur_quad->dest->val.st_ref->is_global == false)
+                    printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                // dst is global
+                else if (cur_quad->dest->val.st_ref->is_global == true)
+                    printf("  sw $t0, _%s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_SUB:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
-                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                // local_var - local_var
+                if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // global_var - local_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // local_var - global_var
+                else if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                // global_var - global_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                
+                // do subtraction
                 printf("  sub $t0, $t0, $t1\n");
-                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is local
+                if (cur_quad->dest->val.st_ref->is_global == false)
+                    printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                // dst is global
+                else if (cur_quad->dest->val.st_ref->is_global == true)
+                    printf("  sw $t0, _%s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_MULT:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
-                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                // local_var * local_var
+                if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // global_var * local_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // local_var * global_var
+                else if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                // global_var * global_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                
+                // do multiplication
                 printf("  mul $t0, $t0, $t1\n");
-                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is local
+                if (cur_quad->dest->val.st_ref->is_global == false)
+                    printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                // dst is global
+                else if (cur_quad->dest->val.st_ref->is_global == true)
+                    printf("  sw $t0, _%s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_DIV:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
-                printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                // local_var / local_var
+                if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // global_var / local_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == false){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, %d($fp)\n", cur_quad->src2->val.st_ref->offset);
+                }
+                // local_var / global_var
+                else if (cur_quad->src1->val.st_ref->is_global == false && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                // global_var / global_var
+                else if (cur_quad->src1->val.st_ref->is_global == true && cur_quad->src2->val.st_ref->is_global == true){
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                    printf("  lw $t1, _%s\n", cur_quad->src2->val.st_ref->id);
+                }
+                
+                // do division
                 printf("  div $t0, $t0, $t1\n");
-                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is local
+                if (cur_quad->dest->val.st_ref->is_global == false)
+                    printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+                // dst is global
+                else if (cur_quad->dest->val.st_ref->is_global == true)
+                    printf("  sw $t0, _%s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_UMINUS:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                // src is local
+                if (cur_quad->src1->val.st_ref->is_global == false)
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+
+                // src is global
+                else if (cur_quad->src1->val.st_ref->is_global == true)
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
+                
+                // do unary minus
                 printf("  neg $t0, $t0\n");
-                printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is local
+                if (cur_quad->dest->val.st_ref->is_global == false)
+                    printf("  sw $t0, %d($fp)\n", cur_quad->dest->val.st_ref->offset);
+
+                // dst is global
+                else if (cur_quad->dest->val.st_ref->is_global == true)
+                    printf("  sw $t0, _%s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_ASSG:
@@ -121,6 +240,7 @@ void generate_mips(){
                     printf("  li $t0, %d\n", rhs->val.iconst);
                     printf("  sw $t0, _%s\n", lhs->val.st_ref->id);
                 }
+
                 break;
 
             case GC_GT:
@@ -355,7 +475,7 @@ void print_3ac_comment(Quad* cur_quad){
                 break;
 
             case GC_RETRIEVE:
-                printf("#retrieve %s, %s\n", cur_quad->dest->val.st_ref->id, cur_quad->src1->val.st_ref->id);
+                printf("#retrieve %s\n", cur_quad->dest->val.st_ref->id);
                 break;
 
             case GC_RETURN:
@@ -524,15 +644,32 @@ void create_3ac(ASTnode* cur_node){
                 this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
                 append_quad(this_quad);
             }
-            else{
-                create_3ac(cur_node->child0); // child0 should be just an identifier
-                create_3ac(cur_node->child1); // child1 should be an expression
+
+            else if (cur_node->child1->node_type == FUNC_CALL){
+                create_3ac(cur_node->child1);
+                create_3ac(cur_node->child0);
+                
+                // make a temp for the return value
+                Symbol* v0_val = create_tmp();
+                Operand* v0 = make_operand(OPERAND_ST_PTR, v0_val, 0);
+                this_quad = newinstr(GC_RETRIEVE, NULL, NULL, v0);
+                append_quad(this_quad);
+
+                Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+                Operand* rhs = make_operand(OPERAND_ST_PTR, v0->val.st_ref, 0);
+                this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
+                append_quad(this_quad);
+            }        
+
+            else {
+                create_3ac(cur_node->child0);
+                create_3ac(cur_node->child1);
                 Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
                 Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
                 this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
                 append_quad(this_quad);
-            }
-            
+
+            }    
             break;
 
         case UMINUS:
@@ -600,21 +737,19 @@ void create_3ac(ASTnode* cur_node){
             this_quad = newinstr(GC_CALL, func_ref, NULL, NULL);
             this_quad->nargs = get_num_args(cur_node->st_ref);
             append_quad(this_quad);
-            // bogus return value
-            Symbol* ret_val_tmp = create_tmp();
-            Operand* ret_val = make_operand(OPERAND_ST_PTR, ret_val_tmp, 0);
-            this_quad = newinstr(GC_RETRIEVE, func_ref, NULL, ret_val);
-            append_quad(this_quad);
+
             break;
 
         case RETURN:
             if (cur_node->child0 == NULL){
-                Symbol* retval_tmp = create_tmp();
-                Operand* return_val_operand = make_operand(OPERAND_INTCONST, NULL, -1);
-                Operand* return_st_operand = make_operand(OPERAND_ST_PTR, retval_tmp, 0);
-                Quad* assg_quad = newinstr(GC_ASSG, return_val_operand, NULL, return_st_operand);
-                append_quad(assg_quad);
-                this_quad = newinstr(GC_RETURN, return_st_operand, NULL, NULL);
+                this_quad = newinstr(GC_RETURN_VOID, NULL, NULL, NULL);
+                append_quad(this_quad);
+            }
+            else{
+                Symbol* ret_val;
+                create_3ac(cur_node->child0);
+                Operand* ret_val_operand = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
+                this_quad = newinstr(GC_RETURN, ret_val_operand, NULL, NULL);
                 append_quad(this_quad);
             }
             break;
@@ -759,10 +894,26 @@ void make_if_expr(ASTnode* cur_node){
             append_quad(relop_quad);
             break;
 
+        case GE:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_GE, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
         case LT:
             lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
             rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
             relop_quad = newinstr(GC_LT, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        case LE:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_LE, lhs, rhs, NULL);
             relop_quad->label = strdup(label);
             append_quad(relop_quad);
             break;
@@ -771,6 +922,14 @@ void make_if_expr(ASTnode* cur_node){
             lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
             rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
             relop_quad = newinstr(GC_EQ, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        case NE:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_NE, lhs, rhs, NULL);
             relop_quad->label = strdup(label);
             append_quad(relop_quad);
             break;
@@ -845,6 +1004,63 @@ void create_params_3ac(ASTnode* cur_node){
             Operand* int_con_param = make_operand(OPERAND_ST_PTR, tmp_stref, 0);
             Quad* int_con_param_instr = newinstr(GC_PARAM, int_con_param, NULL, NULL);
             append_quad(int_con_param_instr);
+            break;
+
+        case ADD:
+            create_3ac(cur_node);
+            Operand* add_param = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            Quad* add_param_instr = newinstr(GC_PARAM, add_param, NULL, NULL);
+            append_quad(add_param_instr);
+            break;
+
+        case SUB:
+            create_3ac(cur_node);
+            Operand* sub_param = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            Quad* sub_param_instr = newinstr(GC_PARAM, sub_param, NULL, NULL);
+            append_quad(sub_param_instr);
+            break;
+
+        case MUL:
+            create_3ac(cur_node);
+            Operand* mul_param = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            Quad* mul_param_instr = newinstr(GC_PARAM, mul_param, NULL, NULL);
+            append_quad(mul_param_instr);
+            break;
+
+        case DIV:
+            create_3ac(cur_node);
+            Operand* div_param = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            Quad* div_param_instr = newinstr(GC_PARAM, div_param, NULL, NULL);
+            append_quad(div_param_instr);
+            break;
+
+        case UMINUS:
+            create_3ac(cur_node);
+            Operand* uminus_param = make_operand(OPERAND_ST_PTR, cur_node->st_ref, 0);
+            Quad* uminus_param_instr = newinstr(GC_PARAM, uminus_param, NULL, NULL);
+            append_quad(uminus_param_instr);
+            break;
+
+        case FUNC_CALL:
+            // if a function call is a parameter, we need to do the function call
+            create_3ac(cur_node);
+
+            // create a temp to store the return value
+            Symbol* v0_val = create_tmp();
+            Operand* v0 = make_operand(OPERAND_ST_PTR, v0_val, 0);
+            Quad* this_quad = newinstr(GC_RETRIEVE, NULL, NULL, v0);
+            append_quad(this_quad);
+
+            // assign a the temp to the return val
+            Symbol* func_call_return_param_ST = create_tmp();
+            Operand* func_call_return_param = make_operand(OPERAND_ST_PTR, func_call_return_param_ST, 0);
+            this_quad = newinstr(GC_ASSG, v0, NULL, func_call_return_param);
+            append_quad(this_quad);
+
+            Operand* func_call_param = make_operand(OPERAND_ST_PTR, func_call_return_param_ST, 0);
+            this_quad = newinstr(GC_PARAM, func_call_param, NULL, NULL);
+            append_quad(this_quad);
+
             break;
     }
     return;
