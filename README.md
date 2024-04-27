@@ -40,11 +40,11 @@ There are 4 optional flags for compilation
 
 The compiler can be run with all, none, or a combination of flags
 
-#### note
+#### note about linked function println(int):
 
 This compiler has support for printing integers using a function called ```println(int)```. The function definition does not need to be in the source code, as
-it is linked to the mips output during the code generation phase. If source code contains calls to ```println(int)``` when the ```--chk_decl, --print_ast, or --gen_3ac``` flags
-are on, the compiler will throw an error. Simply add a function stub for ```println(int)``` to the source code for these flags to work properlyy.
+it is linked to the mips output during the code generation phase. If source code contains calls to ```println(int)``` when the ```--chk_decl, --print_ast, or --gen_3ac``` 
+flags are on, the compiler will throw an error. Simply add a function stub for ```println(int)``` to the source code for these flags to work properly.
 
 ### Run
 
