@@ -646,17 +646,11 @@ void create_3ac(ASTnode* cur_node){
             }
 
             else if (cur_node->child1->node_type == FUNC_CALL){
-                create_3ac(cur_node->child1);
-                create_3ac(cur_node->child0);
-                
-                // make a temp for the return value
-                Symbol* v0_val = create_tmp();
-                Operand* v0 = make_operand(OPERAND_ST_PTR, v0_val, 0);
-                this_quad = newinstr(GC_RETRIEVE, NULL, NULL, v0);
-                append_quad(this_quad);
+                create_3ac(cur_node->child1); //process function call
+                create_3ac(cur_node->child0); // process identifier
 
                 Operand* lhs = make_operand(OPERAND_ST_PTR, cur_node->child0->st_ref, 0);
-                Operand* rhs = make_operand(OPERAND_ST_PTR, v0->val.st_ref, 0);
+                Operand* rhs = make_operand(OPERAND_ST_PTR, cur_node->child1->st_ref, 0);
                 this_quad = newinstr(GC_ASSG, rhs, NULL, lhs);
                 append_quad(this_quad);
             }        
@@ -738,6 +732,12 @@ void create_3ac(ASTnode* cur_node){
             this_quad->nargs = get_num_args(cur_node->st_ref);
             append_quad(this_quad);
 
+            
+            Symbol* v0_val = create_tmp();
+            cur_node->st_ref = v0_val;
+            Operand* v0 = make_operand(OPERAND_ST_PTR, v0_val, 0);
+            this_quad = newinstr(GC_RETRIEVE, NULL, NULL, v0);
+            append_quad(this_quad);
             break;
 
         case RETURN:
@@ -971,6 +971,27 @@ void make_while_expr(ASTnode* cur_node){
             relop_quad->label = strdup(label);
             append_quad(relop_quad);
             break;
+
+        case LE:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_GT, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        case GE:
+            lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
+            rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
+            relop_quad = newinstr(GC_LT, lhs, rhs, NULL);
+            relop_quad->label = strdup(label);
+            append_quad(relop_quad);
+            break;
+
+        default:
+            fprintf(stderr, "ERROR: Invalid while expression\n");
+            exit(1);
+            break;
     }
 
 
@@ -1051,14 +1072,8 @@ void create_params_3ac(ASTnode* cur_node){
             Quad* this_quad = newinstr(GC_RETRIEVE, NULL, NULL, v0);
             append_quad(this_quad);
 
-            // assign a the temp to the return val
-            Symbol* func_call_return_param_ST = create_tmp();
-            Operand* func_call_return_param = make_operand(OPERAND_ST_PTR, func_call_return_param_ST, 0);
-            this_quad = newinstr(GC_ASSG, v0, NULL, func_call_return_param);
-            append_quad(this_quad);
-
-            Operand* func_call_param = make_operand(OPERAND_ST_PTR, func_call_return_param_ST, 0);
-            this_quad = newinstr(GC_PARAM, func_call_param, NULL, NULL);
+            // set return value as a param
+            this_quad = newinstr(GC_PARAM, v0, NULL, NULL);
             append_quad(this_quad);
 
             break;
