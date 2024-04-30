@@ -886,6 +886,7 @@ void make_if_expr(ASTnode* cur_node){
 
     switch(cur_node->node_type){
         Quad* relop_quad;
+
         case GT:
             Operand* lhs = make_operand(OPERAND_ST_PTR, lh_node->st_ref, 0);
             Operand* rhs = make_operand(OPERAND_ST_PTR, rh_node->st_ref, 0);
