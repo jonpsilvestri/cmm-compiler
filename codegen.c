@@ -356,7 +356,10 @@ void generate_mips(){
 
             case GC_RETURN:
                 print_3ac_comment(cur_quad);
-                printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                if (cur_quad->src1->val.st_ref->is_global == false)
+                    printf("  lw $t0, %d($fp)\n", cur_quad->src1->val.st_ref->offset);
+                else if (cur_quad->src1->val.st_ref->is_global == true)
+                    printf("  lw $t0, _%s\n", cur_quad->src1->val.st_ref->id);
                 printf("  add $v0, $zero, $t0\n");
                 printf("  la $sp, 0($fp)\n");
                 printf("  lw $ra, 0($sp)\n");

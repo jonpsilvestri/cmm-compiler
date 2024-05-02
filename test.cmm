@@ -1,22 +1,23 @@
-int fib(int n) {
-    if (n <= 0) {
-        return 1;
-    }
-    else {
-        return fib(n-1) + fib(n-2);
-    }
+int x, z;
+
+int one() { return 1; }
+
+int two() { return 2; }
+
+int add1(int x) { return x+1; }
+
+int increment_z(int n) {
+    z = z + n;
+    return z;
 }
 
 int main() {
-    int n;
-    int i, x;
+    x = one();
+    z = two();
+    
+    increment_z(x);
+    
+    increment_z( increment_z(z) );
+    println(z);
 
-    n = 7;
-
-    i = 0;
-    while (i <= n) {
-        x = fib(i);
-	    println(x);
-	    i = i + 1;
-    }
 }
