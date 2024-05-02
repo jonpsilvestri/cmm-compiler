@@ -608,14 +608,6 @@ int get_num_args(Symbol* function_ref){
     return function_ref->num_args;
 }
 
-/*
-    -------------NOTICE: THIS FUNCTION IS NOT USED----------------
-    This function is used to check if the number of arguments in function calls
-    matches the number of arguments in the function definition, but is currently
-    broken due to the lack of support for nested function calls.
-
-    REMOVE THE RETURN STATEMENT TO DEBUG
-*/
 void check_arg_num(ASTnode* arg_list, char* fn_id){
     int na = 0;
     ASTnode* curN = arg_list;
