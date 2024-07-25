@@ -50,38 +50,45 @@ char* token_name[] = {
 };
 
 
-int cur_tok;
-char* cur_id;
-char* last_function_id;
-int num_args;
+int cur_tok;    // current token (enumerated from scanner)
+char* cur_id;   // lexeme of the current ID (function/variable)
+char* last_function_id; // lexeme of the last seen function
+int num_args;   // number of args of the last seen function
+bool in_function;   // flag is true when parsing a function definition
 
 
 extern char* lexeme;
-extern int line_number;
-extern int chk_decl_flag;
-extern int print_ast_flag;
-extern int gen_code_flag;
-extern int gen_3ac_flag;
-SymbolTable* scope = NULL;
-bool in_function;
-ASTnode* root = NULL;
-extern Quad* quad_ll;
-extern Quad* quad_ll_tail;
+extern int line_number;     // line number from the scanner
+extern int chk_decl_flag;   // check declarations flag
+extern int print_ast_flag;  // print ast flag
+extern int gen_code_flag;   // generate code flag
+extern int gen_3ac_flag;    // generate 3 address code flag
+extern Quad* quad_ll;       // list of instructions from code generator
+extern Quad* quad_ll_tail;  // tail of instruction list
 
+SymbolTable* scope = NULL;  // pointer to the symbol table of the current scope
+ASTnode* root = NULL;       // root of the AST 
+
+/*
+ * parse() -- Entrypoint for parsing called by the driver. Instantiates the symbol table and AST.
+ * call the start symbol of the C-- language (prog()) and return an error code
+ * 
+ */
 int parse(){
-    cur_tok = get_token();
+    cur_tok = get_token();  // request first token from scanner
 
     if (cur_tok == EOF){
         match(EOF); return 0;
     }
-    scope = (SymbolTable*)malloc(sizeof(SymbolTable));
+    scope = (SymbolTable*)malloc(sizeof(SymbolTable));  // create global symbol table
     num_args = 0;
 
+    // if MIPS code is to be generated, add println(int) to symbol table.
     if (gen_code_flag || gen_3ac_flag){
         add_symbol("println", true);
         scope->head->num_args = 1;
     }
-    prog();
+    prog(); // grammar start symbol
 
     if (gen_code_flag){
         generate_println();
@@ -90,6 +97,10 @@ int parse(){
     return 0;
 }
 
+/* prog() -- C-- start symbol. Will call function definition non-terminal, or parse global variables
+ * until the EOF token is reached
+ *
+ */
 void prog(){
     in_function = false;
     root = NULL;
@@ -97,18 +108,19 @@ void prog(){
         match(EOF);
         return;
     }
-    type();
+    type(); // match type (int)
     cur_id = strdup(lexeme);
     match(ID);
+    // FUNCTION DEFINITION BRANCH
     if (cur_tok == LPAREN){
-        add_symbol(cur_id, true);
+        add_symbol(cur_id, true);   // add function definition to symbol table
         root = make_func_ast();
-        ASTnode* body = func_defn();
+        ASTnode* body = func_defn();    // Generate the the AST from function body
         root->child0 = body;
         if (print_ast_flag) {print_ast(root);}
+        // generate the assembly code of function
         if (gen_code_flag){
             create_3ac(root);
-            //print_3ac();
             generate_mips();
             quad_ll = NULL;
             quad_ll_tail = NULL;
@@ -117,20 +129,21 @@ void prog(){
             create_3ac(root);
             print_3ac();
         }
-        pop_symbol_table();
+        pop_symbol_table(); // clear local symbol table of the recently compiled function
         prog();
     }
-
+    // GLOBAL VARIABLE BRANCH
     // int x, || int x;
     else if (cur_tok == COMMA || cur_tok == SEMI){
         if (gen_code_flag && !in_function){
             print_global();
         }
-
+        // add global variables to global symbol table
         add_symbol(cur_id, false);
         var_decl();
-        prog();
+        prog(); // compile next function/global variable
     }
+    // expected token not encountered
     else{
         ERRMSG();
     }
